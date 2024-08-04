@@ -191,7 +191,7 @@ VDM_CMDS = {
 VDM_ACK = ['REQ', 'ACK', 'NAK', 'BSY']
 
 # Passive Cable Latency
-CABLE_CURRENT = {
+CABLE_LATENCY = {
     1: '< 10ns (~1m)',
     2: '10 - 20ns (~2m)',
     3: '20 - 30ns (~3m)',
@@ -203,7 +203,7 @@ CABLE_CURRENT = {
 }
 
 # Maximum Vbus Voltage
-CABLE_CURRENT = {
+CABLE_VOLTAGE = {
     0: '20V',
     1: '30V',
     2: '40V',
@@ -399,6 +399,7 @@ class Decoder(srd.Decoder):
                 txt = 'unstruct [%04x]' % (data & 0x7fff)
             txt += ' SVID:%04x' % (vid)
         elif idx == 1:
+            # TODO: Check if SVID==0xff00, DFP and Passive Cable
             vid = data >> 16
             conn = (data >> 21) & 3
             alt = data & (1 << 26)
@@ -407,7 +408,9 @@ class Decoder(srd.Decoder):
             host = data & (1 << 31)
             txt = '[ID Header]'
             txt += ' VID:%04x' % (vid)
-            txt += '[Alt Mode]' if alt else ''
+            txt += ' [Alt Mode]' if alt else ''
+            txt += ' [Host]' if host else ''
+            txt += ' [Device]' if device else ''
         elif idx == 2:
             txt = '[Cert Stat] XID:%08x' % (data)
         elif idx == 3:
@@ -427,8 +430,14 @@ class Decoder(srd.Decoder):
             vdo = (data >> 21) & 7
             fw = (data >> 24) & 0xF
             hw = (data >> 28) & 0xF
-            txt = '[Passive Cable]'
-            txt += ' Data:%08x' % (data)
+            txt = '[Passive Cable] '
+            txt += CABLE_LATENCY[lat] if lat in CABLE_LATENCY else ''
+            txt += ' '
+            txt += CABLE_VOLTAGE[vbus] if vbus in CABLE_VOLTAGE else ''
+            txt += ' '
+            txt += CABLE_CURRENT[curr] if curr in CABLE_CURRENT else ''
+            txt += ' '
+            txt += CABLE_SPEED[speed] if speed in CABLE_SPEED else ''
         else: # VDM payload
             txt = 'VDO:%08x' % (data)
         return txt
