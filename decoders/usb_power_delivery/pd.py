@@ -190,6 +190,41 @@ VDM_CMDS = {
 }
 VDM_ACK = ['REQ', 'ACK', 'NAK', 'BSY']
 
+# Passive Cable Latency
+CABLE_CURRENT = {
+    1: '< 10ns (~1m)',
+    2: '10 - 20ns (~2m)',
+    3: '20 - 30ns (~3m)',
+    4: '30 - 40ns (~4m)',
+    5: '40 - 50ns (~5m)',
+    6: '50 - 60ns (~6m)',
+    7: '60 - 70ns (~7m)',
+    8: '> 70ns (>~7m)',
+}
+
+# Maximum Vbus Voltage
+CABLE_CURRENT = {
+    0: '20V',
+    1: '30V',
+    2: '40V',
+    3: '50V',
+}
+
+# Vbus Current Handling Capability
+CABLE_CURRENT = {
+    1: '3A',
+    2: '5A',
+}
+
+# USB Highest Speed
+CABLE_SPEED = {
+    0: 'USB 2.0',
+    1: 'USB 3.2 Gen1',
+    2: 'USB 3.2 Gen2',
+    3: 'USB4 Gen3',
+    4: 'USB4 Gen4',
+}
+
 
 class SamplerateError(Exception):
     pass
@@ -363,6 +398,37 @@ class Decoder(srd.Decoder):
             else: # Unstructured VDM
                 txt = 'unstruct [%04x]' % (data & 0x7fff)
             txt += ' SVID:%04x' % (vid)
+        elif idx == 1:
+            vid = data >> 16
+            conn = (data >> 21) & 3
+            alt = data & (1 << 26)
+            ptype = (data >> 27) & 7
+            device = data & (1 << 30)
+            host = data & (1 << 31)
+            txt = '[ID Header]'
+            txt += ' VID:%04x' % (vid)
+            txt += '[Alt Mode]' if alt else ''
+        elif idx == 2:
+            txt = '[Cert Stat] XID:%08x' % (data)
+        elif idx == 3:
+            pid = data & 0xffff
+            bcd = data > 16
+            txt = '[Product]'
+            txt += ' PID:%04x' % pid
+            txt += ' bcd:%04x' % bcd
+        elif idx == 4:
+            speed = data & 3
+            curr = (data >> 5) & 3
+            vbus = (data >> 9 ) & 3
+            term = (data >> 11) & 3
+            lat = (data >> 13) & 0xF
+            epr = data & (1 << 17)
+            conn = (data >> 18) & 3
+            vdo = (data >> 21) & 7
+            fw = (data >> 24) & 0xF
+            hw = (data >> 28) & 0xF
+            txt = '[Passive Cable]'
+            txt += ' Data:%08x' % (data)
         else: # VDM payload
             txt = 'VDO:%08x' % (data)
         return txt
