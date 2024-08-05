@@ -190,6 +190,12 @@ VDM_CMDS = {
 }
 VDM_ACK = ['REQ', 'ACK', 'NAK', 'BSY']
 
+# USB Type-C plug type
+CABLE_PLUG = {
+    2: 'Type-C',
+    3: 'Captive',
+}
+
 # Passive Cable Latency
 CABLE_LATENCY = {
     1: '< 10ns (~1m)',
@@ -395,6 +401,10 @@ class Decoder(srd.Decoder):
                 txt = VDM_ACK[ack] + ' '
                 txt += VDM_CMDS[cmd] if cmd in VDM_CMDS else 'cmd?'
                 txt += ' pos %d' % (pos) if pos else ' '
+                if vid == 0xff00:
+                    # TODO: Decode USB Messages
+                elif vid == 0x8087:
+                    # TODO: Decode TBT3 Messages
             else: # Unstructured VDM
                 txt = 'unstruct [%04x]' % (data & 0x7fff)
             txt += ' SVID:%04x' % (vid)
@@ -462,6 +472,13 @@ class Decoder(srd.Decoder):
             txt += self.get_vdm(idx, self.data[idx])
         elif t == 3:
             txt += self.get_bist(idx, self.data[idx])
+        self.putx(s0, s1, [11, [txt, txt]])
+        self.text += ' - ' + txt
+
+    def putpayload_vdm(self, s0, s1, idx):
+        t = self.head_type()
+        txt = '['+str(idx+1)+'] '
+        txt += self.get_vdm(idx, self.data[idx])
         self.putx(s0, s1, [11, [txt, txt]])
         self.text += ' - ' + txt
 
